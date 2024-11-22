@@ -68,6 +68,31 @@
     .no-print {
       display: inline-block;
     }
+
+    /* Print Styling */
+    @media print {
+      .no-print {
+        display: none;
+      }
+
+      .invoice-container {
+        border: none;
+        background: white;
+      }
+
+      input[type="text"], input[type="number"], input[type="date"], textarea {
+        border: none;
+        background: none;
+        color: black;
+        font-weight: bold;
+        padding: 0;
+      }
+
+      table th, table td {
+        border: 1px solid black;
+        padding: 5px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -177,6 +202,7 @@
 
     <!-- Footer Buttons -->
     <footer>
+      <button type="button" class="no-print" onclick="calculateTotals()">Calculate</button>
       <button type="button" class="no-print" id="download-pdf" onclick="downloadPDF()">Download PDF</button>
     </footer>
   </div>
@@ -213,18 +239,51 @@
     }
 
     function downloadPDF() {
-      const invoice = document.getElementById('invoice');
-      document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+  const invoice = document.getElementById('invoice');
+  
+  // Temporarily store input values and replace them with text
+  const formElements = document.querySelectorAll('input, textarea');
+  formElements.forEach(el => {
+    if (el.type !== 'button') {
+      // Replace input fields with their values as text
+      const value = el.value;
+      el.setAttribute('data-value', value);  // Save the current value
+      el.value = value;  // Make the input's value static (text)
+      if (el.tagName.toLowerCase() === 'textarea') {
+        el.innerText = value;  // For textarea, set innerText
+      }
+    }
+    el.style.border = 'none';  // Remove any borders to make it look clean
+  });
 
-      html2canvas(invoice).then(canvas => {
-        const pdf = new jspdf.jsPDF();
-        const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 10, 10, 190, 0);
-        pdf.save('invoice.pdf');
+  // Hide form elements (inputs, textareas, buttons) before capturing content for PDF
+  const hiddenElements = document.querySelectorAll('button');
+  hiddenElements.forEach(el => el.style.display = 'none');  // Hide the buttons
 
-        document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
-      });
+  // Generate the PDF
+  html2canvas(invoice).then(canvas => {
+    const pdf = new jspdf.jsPDF();
+    const imgData = canvas.toDataURL('image/png');
+    pdf.addImage(imgData, 'PNG', 10, 10, 190, 0);
+    
+    // Save the generated PDF
+    pdf.save('invoice.pdf');
+
+    // Restore input values and show buttons after PDF generation
+    formElements.forEach(el => {
+      el.style.display = '';  // Restore visibility of form fields
+      if (el.type !== 'button') {
+        el.value = el.getAttribute('data-value');  // Restore original input values
+      }
+    });
+
+    // Restore buttons visibility
+    hiddenElements.forEach(el => el.style.display = '');  // Show buttons again
+  });
+
+
+
     }
   </script>
 </body>
-</html>
+</html>  
